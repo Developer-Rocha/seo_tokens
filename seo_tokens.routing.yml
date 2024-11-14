@@ -1,0 +1,7 @@
+seo_tokens.settings:
+  path: '/admin/config/seo-tokens/settings'
+  defaults:
+    _form: '\Drupal\seo_tokens\Form\SeoTokenSettingsForm'
+    _title: 'SEO Tokens Settings'
+  requirements:
+    _permission: 'administer site configuration'

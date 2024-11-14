@@ -1,0 +1,260 @@
+<?php
+
+use Drupal\field\Entity\FieldStorageConfig;
+use Drupal\field\Entity\FieldConfig;
+use Drupal\Core\Render\BubbleableMetadata;
+use Drupal\Core\Entity\Entity\EntityFormDisplay;
+use Drupal\Core\Entity\Entity\EntityViewDisplay;
+
+/**
+ * Implements hook_install().
+ */
+function seo_tokens_install() {
+  // Define the fields to be created.
+  $fields = [
+    'field_seo_tokens_title' => [
+      'type' => 'string',
+      'label' => 'SEO Title',
+      'description' => 'Custom SEO title field.',
+      'settings' => [
+        'max_length' => 255,
+        'allowed_formats' => ['plain_text'],
+      ],
+    ],
+    'field_seo_tokens_description' => [
+      'type' => 'text_long',
+      'label' => 'SEO Description',
+      'description' => 'Custom SEO description field.',
+      'settings' => [
+        'is_ascii' => FALSE,
+        'case_sensitive' => FALSE,
+        'allowed_formats' => ['plain_text'],
+      ],
+    ],
+    'field_seo_tokens_image' => [
+      'type' => 'image',
+      'label' => 'SEO Images',
+      'description' => 'Custom SEO images field.',
+      'settings' => [
+        'target_type' => 'media',
+        'handler' => 'default:media',
+        'handler_settings' => [
+          'target_bundle' => ['image'],
+          'auto_create' => TRUE,
+        ]
+      ],
+    ],
+  ];
+
+  // It iterates through the fields and creates the storage and configuration of the fields.
+  foreach ($fields as $field_name => $field_info) {
+    if (!FieldStorageConfig::loadByName('node', $field_name)) {
+      FieldStorageConfig::create([
+        'field_name' => $field_name,
+        'entity_type' => 'node',
+        'type' => $field_info['type'],
+        'cardinality' => 1,
+        'translatable' => TRUE,
+        'settings' => $field_info['settings'],
+        'revisionable' => TRUE,
+      ])->save();
+    }
+
+    // Gets all the ‘node’ bundles and adds the field to each one.
+    $bundles = \Drupal::service('entity_type.bundle.info')->getBundleInfo('node');
+    foreach ($bundles as $bundle => $bundle_info) {
+      if (!FieldConfig::loadByName('node', $bundle, $field_name)) {
+        FieldConfig::create([
+          'field_name' => $field_name,
+          'entity_type' => 'node',
+          'bundle' => $bundle,
+          'label' => $field_info['label'],
+          'description' => $field_info['description'],
+          'settings' => [],
+          'required' => FALSE,
+        ])->save();
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function seo_tokens_uninstall() {
+  // Defines the fields to be removed.
+  $fields = [
+    'field_seo_tokens_title',
+    'field_seo_tokens_description',
+    'field_seo_tokens_image',
+  ];
+
+  // Removes field configuration from all form displays.
+  foreach (EntityFormDisplay::loadMultiple() as $form_display) {
+    foreach ($fields as $field_name) {
+      if ($form_display->getComponent($field_name)) {
+        $form_display->removeComponent($field_name);
+        $form_display->save();
+      }
+    }
+  }
+
+  // Removes the field configuration from all visualisation displays.
+  foreach (EntityViewDisplay::loadMultiple() as $view_display) {
+    foreach ($fields as $field_name) {
+      if ($view_display->getComponent($field_name)) {
+        $view_display->removeComponent($field_name);
+        $view_display->save();
+      }
+    }
+  }
+
+  // Removes all field configurations (FieldConfig) associated with the fields.
+  foreach ($fields as $field_name) {
+    $field_configs = \Drupal::entityTypeManager()->getStorage('field_config')->loadByProperties(['field_name' => $field_name]);
+    foreach ($field_configs as $field_config) {
+      $field_config->delete();
+    }
+
+    // Removes the field storage configuration (FieldStorageConfig) only after confirming that the field configurations have been removed.
+    if ($field_storage = FieldStorageConfig::loadByName('node', $field_name)) {
+      $field_storage->delete();
+    }
+  }
+
+  // Removes the module's specific configuration.
+  \Drupal::configFactory()->getEditable('seo_tokens.settings')->delete();
+}
+
+
+
+/**
+ * Implements hook_help().
+ */
+function seo_tokens_help($route_name, $route_match) {
+  switch ($route_name) {
+    case 'help.page.seo_tokens':
+      return '<p>' . t('SEO Tokens module provides custom tokens for SEO.') . '</p>';
+    case 'admin.modules':
+      return '<p>' . t('For configuration settings, visit the <a href="@url">SEO Tokens settings page</a>.', ['@url' => \Drupal::url('seo_tokens.settings')]) . '</p>';
+  }
+}
+
+/**
+ * Implements hook_token_info().
+ */
+function seo_tokens_token_info() {
+  $type['seo'] = [
+    'name' => t('SEO Tokens'),
+    'description' => t('Provides SEO tokens for metatag module.'),
+  ];
+
+  $tokens = [];
+  $tokens['title'] = [
+    'name' => t('SEO title'),
+    'description' => t('Provides SEO title for metatag module.'),
+  ];
+  $tokens['description'] = [
+    'name' => t('SEO description'),
+    'description' => t('Provides SEO description for metatag module.'),
+  ];
+  $tokens['image'] = [
+    'name' => t('SEO image'),
+    'description' => t('Provides SEO image for metatag module.'),
+  ];
+
+  return [
+    'types' => [
+      'seo' => $type,
+    ],
+    'tokens' => [
+      'seo' => $tokens,
+    ],
+  ];
+}
+/**
+ * Implements hook_tokens().
+ */
+function seo_tokens_tokens($type, $tokens, array $data, array $options, BubbleableMetadata $bubbleable_metadata) {
+  $replacements = [];
+
+  if ($type === 'seo') {
+    foreach ($tokens as $name => $original) {
+      switch ($name) {
+        case 'title':
+          if (!empty($data['node']) && $data['node'] instanceof \Drupal\node\NodeInterface) {
+            $node = $data['node'];
+            $title = _seo_tokens_get_field_value($node, 'field_seo_tokens_title');
+            if ($title) {
+              $replacements[$original] = $title;
+            }
+          }
+          break;
+        case 'description':
+          if (!empty($data['node']) && $data['node'] instanceof \Drupal\node\NodeInterface) {
+            $node = $data['node'];
+            $description = _seo_tokens_get_field_value($node, 'field_seo_tokens_description');
+            if ($description) {
+              $replacements[$original] = $description;
+            }
+          }
+          break;
+        case 'image':
+          if (!empty($data['node']) && $data['node'] instanceof \Drupal\node\NodeInterface) {
+            $node = $data['node'];
+            $image = _seo_tokens_get_field_value($node, 'field_seo_tokens_image');
+            if ($image) {
+              $replacements[$original] = $image;
+            }
+          }
+          break;
+      }
+    }
+  }
+
+  return $replacements;
+}
+
+/**
+ * Helper function to get the value of a specified field.
+ *
+ * @param \Drupal\node\NodeInterface $node
+ *   The node entity.
+ * @param string $field_name
+ *   The name of the field to retrieve.
+ *
+ * @return string|null
+ *   The value of the specified field, or null if the field is not set.
+ */
+function _seo_tokens_get_field_value(\Drupal\node\NodeInterface $node, $field_name) {
+  $bundle = $node->bundle();
+  $config = \Drupal::config('seo_tokens.settings');
+
+  // Determines the fallback configuration based on the field name.
+  switch ($field_name) {
+    case 'field_seo_tokens_title':
+      $fallback_field = $config->get('content_types.' . $bundle . '.fallback_field_title-' . $bundle);
+      break;
+    case 'field_seo_tokens_description':
+      $fallback_field = $config->get('content_types.' . $bundle . '.fallback_field_description-' . $bundle);
+      break;
+    case 'field_seo_tokens_image':
+      $fallback_field = $config->get('content_types.' . $bundle . '.fallback_field_image-' . $bundle);
+      break;
+    default:
+      $fallback_field = null;
+  }
+
+  // Check that the field is present and not empty.
+  if ($node->hasField($field_name) && !$node->get($field_name)->isEmpty()) {
+    return $node->get($field_name)->value;
+  }
+  // Checks the fallback field, if defined, and that it is not empty.
+  elseif ($fallback_field && $node->hasField($fallback_field) && !$node->get($fallback_field)->isEmpty()) {
+    return $node->get($fallback_field)->value;
+  }
+
+  return null;
+}
+
+

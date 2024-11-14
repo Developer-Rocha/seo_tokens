@@ -1,0 +1,5 @@
+seo_tokens.settings:
+  title: 'SEO Tokens Settings'
+  description: 'Configure SEO tokens for content types.'
+  parent: system.admin_config_development
+  route_name: seo_tokens.settings
