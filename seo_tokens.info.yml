@@ -7,4 +7,5 @@ configure: seo_tokens.settings
 dependencies:
   - token:token
   - metatag:metatag
+  - drupal:media
 version: '1.0.0-dev'
