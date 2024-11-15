@@ -1,0 +1,24 @@
+{
+  "name": "developer-rocha/seo_tokens",
+  "description": "Provides SEO description tokens for content types.",
+  "type": "drupal-module",
+  "authors": [
+    {
+      "name": "Developer Rocha",
+      "email": "fabriciorocha.dev@gmail.com",
+      "homepage": "https://www.fabriciorocha.com"
+    }
+  ],
+  "license": "GPL-3.0-or-later",
+  "require": {
+    "drupal/core": "^10",
+    "drupal/token": "^1.9",
+    "drupal/metatag": "^1.15",
+    "drupal/media": "^1.1"
+  },
+  "extra": {
+    "branch-alias": {
+      "dev-main": "1.0.x-dev"
+    }
+  }
+}
