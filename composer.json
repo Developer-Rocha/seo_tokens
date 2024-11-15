@@ -13,7 +13,7 @@
   "require": {
     "drupal/core": "^10",
     "drupal/token": "^1.9",
-    "drupal/metatag": "^2.0",
+    "drupal/metatag": "^2.0"
   },
   "extra": {
     "branch-alias": {
