@@ -25,6 +25,23 @@ class SeoTokenSettingsForm extends ConfigFormBase {
       $text_fields = ['' => $this->t('- None -')];
       $image_fields = ['' => $this->t('- None -')];
 
+      $form['content_types'] = [
+        '#type' => 'details',
+        '#title' => $this->t('SEO Fallback Configuration'),
+        '#open' => TRUE,
+        '#weight' => 10,
+        '#description' => $this->t('<strong>This section allows you to configure fallback fields for SEO titles, descriptions, and images for each content type.</strong> These fallback fields will be used if the custom SEO fields are not filled.<br /><br />
+        <strong>Usage:</strong><br />
+        <em>SEO Title:</em> Select a fallback field for the SEO title. Only fields of type "text" are allowed.<br />
+        <em>SEO Description:</em> Select a fallback field for the SEO description. Fields of type "text" and "text_long" are allowed.<br />
+        <em>SEO Image:</em> Select a fallback field for the SEO image. Fields of type "media image" and "image" are allowed.<br /><br />
+        <strong>Available Tokens for Metatag:</strong><br />
+        <em>[seo:title]</em>: The custom SEO title.<br />
+        <em>[seo:description]</em>: The custom SEO description.<br />
+        <em>[seo:image]</em>: The custom SEO image.<br /><br />
+        These tokens can be used in the Metatag module to dynamically generate SEO metadata for your content.'),
+      ];
+
       foreach ($fields as $field_name => $field) {
         if (in_array($field->getType(), ['text']) && $field_name !== 'field_seo_tokens_title') {
           $title_fields[$field_name] = $field->getLabel();
@@ -49,6 +66,7 @@ class SeoTokenSettingsForm extends ConfigFormBase {
           '#title' => $this->t('Fallback field for SEO title'),
           '#options' => $title_fields,
           '#default_value' => $config->get('content_types.' . $type->id() . '.fallback_field_title-' . $type->id()) ?: '',
+          '#description' => $this->t('Select a fallback field for the SEO title. Only fields of type "text" are allowed. This field will be used if the custom SEO title field is not filled.'),
         ];
 
         $form['content_types'][$type->id()]['fallback_field_description-' . $type->id()] = [
@@ -56,6 +74,7 @@ class SeoTokenSettingsForm extends ConfigFormBase {
           '#title' => $this->t('Fallback field for SEO description'),
           '#options' => $text_fields,
           '#default_value' => $config->get('content_types.' . $type->id() . '.fallback_field_description-' . $type->id()) ?: '',
+          '#description' => $this->t('Select a fallback field for the SEO description. Fields of type "text" and "text_long" are allowed. This field will be used if the custom SEO description field is not filled.'),
         ];
 
         $form['content_types'][$type->id()]['fallback_field_image-' . $type->id()] = [
@@ -63,6 +82,7 @@ class SeoTokenSettingsForm extends ConfigFormBase {
           '#title' => $this->t('Fallback field for SEO image'),
           '#options' => $image_fields,
           '#default_value' => $config->get('content_types.' . $type->id() . '.fallback_field_image-' . $type->id()) ?: '',
+          '#description' => $this->t('Select a fallback field for the SEO image. Fields of type "media image" and "image" are allowed. This field will be used if the custom SEO image field is not filled.'),
         ];
       } else {
         $form['content_types'][$type->id()] = [
