@@ -19,18 +19,12 @@ class SeoTokenSettingsForm extends ConfigFormBase {
     $config = $this->config('seo_tokens.settings');
     $content_types = \Drupal\node\Entity\NodeType::loadMultiple();
 
-    foreach ($content_types as $type) {
-      $fields = \Drupal::service('entity_field.manager')->getFieldDefinitions('node', $type->id());
-      $title_fields = ['' => $this->t('- None -')];
-      $text_fields = ['' => $this->t('- None -')];
-      $image_fields = ['' => $this->t('- None -')];
-
-      $form['content_types'] = [
-        '#type' => 'details',
-        '#title' => $this->t('SEO Fallback Configuration'),
-        '#open' => TRUE,
-        '#weight' => 10,
-        '#description' => $this->t('<strong>This section allows you to configure fallback fields for SEO titles, descriptions, and images for each content type.</strong> These fallback fields will be used if the custom SEO fields are not filled.<br /><br />
+    $form['content_types'] = [
+      '#type' => 'details',
+      '#title' => $this->t('SEO Fallback Configuration'),
+      '#open' => TRUE,
+      '#weight' => 10,
+      '#description' => $this->t('<strong>This section allows you to configure fallback fields for SEO titles, descriptions, and images for each content type.</strong> These fallback fields will be used if the custom SEO fields are not filled.<br /><br />
         <strong>Usage:</strong><br />
         <em>SEO Title:</em> Select a fallback field for the SEO title. Only fields of type "text" are allowed.<br />
         <em>SEO Description:</em> Select a fallback field for the SEO description. Fields of type "text" and "text_long" are allowed.<br />
@@ -40,7 +34,13 @@ class SeoTokenSettingsForm extends ConfigFormBase {
         <em>[seo:description]</em>: The custom SEO description.<br />
         <em>[seo:image]</em>: The custom SEO image.<br /><br />
         These tokens can be used in the Metatag module to dynamically generate SEO metadata for your content.'),
-      ];
+    ];
+
+    foreach ($content_types as $type) {
+      $fields = \Drupal::service('entity_field.manager')->getFieldDefinitions('node', $type->id());
+      $title_fields = ['' => $this->t('- None -')];
+      $text_fields = ['' => $this->t('- None -')];
+      $image_fields = ['' => $this->t('- None -')];
 
       foreach ($fields as $field_name => $field) {
         if (in_array($field->getType(), ['text']) && $field_name !== 'field_seo_tokens_title') {
