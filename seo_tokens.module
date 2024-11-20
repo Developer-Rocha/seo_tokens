@@ -144,7 +144,7 @@ function seo_tokens_help($route_name, $route_match) {
  * Implements hook_token_info().
  */
 function seo_tokens_token_info() {
-  $type['seo'] = [
+  $type = [
     'name' => t('SEO Tokens'),
     'description' => t('Provides SEO tokens for metatag module.'),
   ];
